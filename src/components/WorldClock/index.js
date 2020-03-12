@@ -8,7 +8,9 @@ class WorldClock extends React.Component {
     constructor(props) {
       super(props);
       this.state = {
+        error: null,
         isLoaded: false,
+        local: props.local ? props.local : "America/Fortaleza",
         date: new Date()
       };
     }
@@ -16,34 +18,58 @@ class WorldClock extends React.Component {
     componentDidMount() {
       this.timerID = setInterval(
         () => this.tick(),
-        1000
+        2000
       );
     }
   
     tick() {
-      this.setState({
-        date: new Date(),
-      });
-      this.state = {date: new Date};
+      let {local} = this.state;
+      fetch("http://worldtimeapi.org/api/timezone/" + local)
+      .then(res => res.json())
+      .then(
+        (result) => {
+          this.setState({
+            isLoaded: true,
+            error: null,
+            date: result.datetime,
+          });
+        },
+        // Nota: É importante lidar com os erros aqui
+        // em vez de um bloco catch() para não recebermos
+        // exceções de erros dos componentes.
+        (error) => {
+          this.setState({
+            isLoaded: false,
+            error
+          });
+        }
+      )
+      
     }
   
     render() {
-      let {isLoaded, date} = this.state;
-      if(!isLoaded){
+      let {isLoaded, date, error, local} = this.state;
+      if (error){
         return (
           <div>
-            <h2>Carregando...</h2>
+            <h2>Word clock :/ {error.message}</h2>
           </div>
         )
-      } else {
-        return (
-          <div>
-          <div className="Computer Clock">
-              <p>World clock</p>
-              <p className="time">{date.toLocaleTimeString()}.</p>
+      }else if(!isLoaded){
+          return (
+            <div>
+              <h2>Word clock está carregando...</h2>
             </div>
-          </div>
-        );
+          )
+        } else {
+          return (
+            <div>
+            <div className="Computer Clock">
+                <p>{local ? local : "World clock"}</p>
+                <p className="time">{date}.</p>
+              </div>
+            </div>
+          );
       }
     }
   }
